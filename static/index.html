@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>باحث القرآن</title>
+<link rel="icon" href="static/icons/favicon.png">
+<link rel="apple-touch-icon" href="static/icons/apple-touch-icon.png">
+<script>
+  /* set theme and language before first paint: saved choice, else the system setting / browser language */
+  (function () {
+    var t = null, l = null, h = document.documentElement;
+    try { t = localStorage.getItem('qr-theme'); l = localStorage.getItem('qr-lang'); } catch (_) { /* storage blocked */ }
+    if (t !== 'light' && t !== 'dark') t = window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+    if (l !== 'ar' && l !== 'en') l = /^ar\b/i.test(navigator.language || '') ? 'ar' : 'en';
+    h.setAttribute('data-theme', t);
+    h.lang = l; h.dir = l === 'ar' ? 'rtl' : 'ltr';
+  })();
+  /* phone layout (static/phone.css): small touch screens and narrow windows, or the saved choice (the
+     header's layout button). Chrome's "Desktop site" ignores the viewport tag and lays the page out 980px
+     wide, so there the page is zoomed back to the screen's width. app.js calls it again on resize */
+  window.QR_LAYOUT = (function () {
+    var h = document.documentElement;
+    function apply() {
+      var saved = null;
+      try { saved = localStorage.getItem('qr-layout'); } catch (_) { /* storage blocked */ }
+      var sw = screen.width, touch = window.matchMedia && matchMedia('(pointer: coarse)').matches;
+      var small = !!touch && Math.min(screen.width, screen.height) <= 600;
+      var phone = saved === 'phone' || (saved !== 'full' && (small || innerWidth <= 640));
+      var z = phone && small && innerWidth > sw * 1.3 ? innerWidth / sw : 1;
+      h.classList.toggle('phone-able', small);
+      h.classList.toggle('phone', phone);
+      h.style.zoom = z === 1 ? '' : String(z);
+      h.style.width = z === 1 ? '' : sw + 'px';      /* zoom alone keeps the 980px width */
+      h.style.setProperty('--app-h', (innerHeight / z) + 'px');
+      return phone;
+    }
+    apply();
+    return { apply: apply, phone: function () { return h.classList.contains('phone'); } };
+  })();
+</script>
+<link rel="stylesheet" href="static/style.css">
+<link rel="stylesheet" href="static/projects.css">
+<link rel="stylesheet" href="static/phone.css">
+<script src="static/i18n.js"></script>
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <div class="mark" aria-hidden="true">۞</div>
+    <div>
+      <div class="brand-ar" data-i18n="brand.title"></div>
+      <div class="brand-en" data-i18n="brand.sub"></div>
+    </div>
+  </div>
+  <!-- the open project: name (click to rename), its menu and the autosave status (static/projects.js) -->
+  <div id="projectChip" class="proj-chip"></div>
+
+  <nav class="views" id="views" role="tablist" data-i18n-aria="views.aria">
+    <button role="tab" data-view="search" class="on" aria-selected="true" aria-controls="stage" data-i18n="view.search"></button>
+    <button role="tab" data-view="roots" aria-selected="false" aria-controls="stage" data-i18n="view.roots"></button>
+    <button role="tab" data-view="phrases" aria-selected="false" aria-controls="stage" data-i18n="view.phrases"></button>
+  </nav>
+
+  <form class="searchbar" id="searchForm" autocomplete="off" role="search">
+    <div class="qwrap">
+      <label for="q" class="sr" data-i18n="q.label"></label>
+      <input id="q" dir="auto" data-i18n-placeholder="q.ph" data-i18n-title="q.title" spellcheck="false"
+             role="combobox" aria-autocomplete="list" aria-controls="suggest" aria-expanded="false" maxlength="500">
+      <div class="suggest" id="suggest" role="listbox" hidden></div>
+    </div>
+    <select id="mode" data-i18n-aria="mode.aria" data-i18n-title="mode.aria">
+      <option value="auto" data-i18n="mode.auto"></option>
+      <option value="word" data-i18n="mode.word"></option>
+      <option value="root" data-i18n="mode.root"></option>
+      <option value="topic" data-i18n="mode.topic"></option>
+      <option value="ayah" data-i18n="mode.ayah"></option>
+    </select>
+    <select id="scope" data-i18n-aria="scope.aria" data-i18n-title="scope.aria">
+      <option value="all" data-i18n="scope.all"></option>
+      <option value="meccan" data-i18n="scope.meccan"></option>
+      <option value="medinan" data-i18n="scope.medinan"></option>
+    </select>
+    <!-- caps the network only (the results list always shows every match); sets the NEXT search, each network has its own refiner -->
+    <select id="n" data-i18n-aria="n.aria" data-i18n-title="n.title">
+      <option value="auto" selected data-i18n="n.auto"></option><option value="40" data-i18n="n.opt" data-i18n-n="40"></option><option value="60" data-i18n="n.opt" data-i18n-n="60"></option><option value="100" data-i18n="n.opt" data-i18n-n="100"></option><option value="150" data-i18n="n.opt" data-i18n-n="150"></option><option value="300" data-i18n="n.opt" data-i18n-n="300"></option><option value="all" data-i18n="n.all"></option>
+    </select>
+    <!-- phone layout: the three choices above fold behind this button -->
+    <button class="opts-btn" id="btnOpts" type="button" aria-expanded="false" data-i18n-title="opts.title" data-i18n-aria="opts.title">⚙</button>
+    <button class="go" type="submit" data-i18n="go" data-i18n-title="q.title"></button>
+  </form>
+  <div class="top-btns">
+    <!-- browser version only: install as an app (app.js shows it where the browser can) -->
+    <button class="theme-btn" id="btnInstall" type="button" hidden data-i18n-title="install.title" data-i18n-aria="install.title">⤓</button>
+    <!-- small touch screens: phone layout ⇄ the full one (app.js) -->
+    <button class="theme-btn layout-btn" id="btnLayout" type="button"></button>
+    <button class="theme-btn" id="btnTheme" type="button" data-i18n-title="theme.title">☀</button>
+    <!-- shows the language it switches to; app.js sets its text, lang and label -->
+    <button class="theme-btn lang-btn" id="btnLang" type="button"></button>
+  </div>
+</header>
+
+<main>
+  <section class="stage" id="stage">
+    <div id="graph" dir="ltr" tabindex="0" role="application" data-i18n-aria="graph.aria"></div>
+
+    <div id="phraseView" class="phrase-view" hidden>
+      <div class="phrase-head">
+        <div>
+          <h2><span data-i18n="ph.title"></span> <small data-i18n="ph.titleSub"></small></h2>
+          <p data-i18n-html="ph.desc"></p>
+        </div>
+        <input id="phraseFilter" dir="auto" data-i18n-placeholder="ph.filter" data-i18n-aria="ph.filterAria">
+      </div>
+      <div id="phraseList" class="phrase-list"></div>
+    </div>
+
+    <div class="welcome" id="welcome">
+      <div class="w-ar" data-i18n="w.title"></div>
+      <div class="w-en" data-i18n-html="w.desc"></div>
+      <div class="examples" id="examples"></div>
+      <div class="w-note" data-i18n="w.note"></div>
+    </div>
+
+    <aside class="legend" id="legend" hidden data-i18n-aria="lg.aria">
+      <button class="lg-collapse" id="lgToggle" aria-expanded="true" data-i18n-aria="lg.toggle" data-i18n-title="lg.toggle">◧</button>
+      <div class="lg-body" id="lgBody">
+        <div class="lg-sec">
+          <div class="lg-title" data-i18n="lg.layout"></div>
+          <div class="seg" id="layoutSeg" role="radiogroup" data-i18n-aria="lg.layout">
+            <button data-l="organized" class="on" role="radio" aria-checked="true" data-i18n-title="layout.organizedT"><span data-i18n="layout.organized"></span> <small>1</small></button>
+            <button data-l="radial" role="radio" aria-checked="false" data-i18n-title="layout.radialT"><span data-i18n="layout.radial"></span> <small>2</small></button>
+            <button data-l="free" role="radio" aria-checked="false" data-i18n-title="layout.freeT"><span data-i18n="layout.free"></span> <small>3</small></button>
+          </div>
+          <div class="row-btns">
+            <button id="btnThemesOnly" class="mini" aria-pressed="false" data-i18n="btn.themesOnly" data-i18n-title="btn.themesOnlyT"></button>
+            <button id="btnReorg" class="mini" data-i18n="btn.reorg" data-i18n-title="btn.reorgT"></button>
+          </div>
+        </div>
+        <div class="lg-sec" id="nodeKey">
+          <div class="lg-title" data-i18n="lg.nodes"></div>
+          <div class="lg-row"><i class="dot star"></i><span data-i18n="key.query"></span></div>
+          <div class="lg-row"><i class="dot" style="background:var(--node);box-shadow:0 0 0 2px var(--seed)"></i><span data-i18n="key.seed"></span></div>
+          <div class="lg-row"><i class="dot ring"></i><span data-i18n="key.lex"></span></div>
+          <div class="lg-row"><i class="dot hollow"></i><span data-i18n="key.meaning"></span></div>
+          <div class="lg-row"><small data-i18n="key.forms"></small></div>
+          <div class="lg-row"><i class="dot diamond"></i><span data-i18n-html="key.root"></span></div>
+          <div class="lg-row"><i class="dot" style="background:none;border:1.5px dashed var(--muted);border-radius:3px"></i><span data-i18n="key.related"></span></div>
+        </div>
+        <div class="lg-sec" id="edgeToggles">
+          <div class="lg-title" data-i18n="lg.links"></div>
+          <label class="lg-row"><input type="checkbox" data-edge="root" checked><i class="ln" style="background:var(--e-root)"></i><span data-i18n="edge.root"></span></label>
+          <label class="lg-row"><input type="checkbox" data-edge="meaning" checked><i class="ln" style="background:var(--e-meaning)"></i><span data-i18n="edge.meaning"></span></label>
+          <label class="lg-row"><input type="checkbox" data-edge="phrase" checked><i class="ln thick" style="background:var(--e-phrase)"></i><span data-i18n="edge.phrase"></span></label>
+          <label class="lg-row"><input type="checkbox" data-edge="tlink" checked><i class="ln thick" style="background:var(--e-tlink)"></i><span data-i18n="edge.tlink"></span></label>
+          <!-- between networks: the dashed link from a node to the network searched from it, and the dotted lines between copies of one ayah -->
+          <label class="lg-row"><input type="checkbox" data-edge="anchor" checked><i class="ln" style="background:repeating-linear-gradient(90deg,var(--query) 0 4px,transparent 4px 7px)"></i><span data-i18n="edge.anchor"></span></label>
+          <label class="lg-row"><input type="checkbox" id="sharedToggle"><i class="ln" style="background:repeating-linear-gradient(90deg,var(--e-meaning) 0 2px,transparent 2px 5px)"></i><span data-i18n="lg.shared"></span></label>
+          <div class="lg-row xmode"><span data-i18n="x.label"></span>
+            <select id="xMode" data-i18n-aria="x.label">
+              <option value="focus" data-i18n="x.focus"></option>
+              <option value="all" data-i18n="x.all"></option>
+              <option value="none" data-i18n="x.none"></option>
+            </select>
+          </div>
+        </div>
+        <div class="lg-sec" id="colorSec">
+          <div class="lg-title" data-i18n="lg.color"></div>
+          <div class="seg" id="colorBy" role="radiogroup" data-i18n-aria="lg.color">
+            <button data-c="theme" class="on" role="radio" aria-checked="true" data-i18n="color.theme"></button>
+            <button data-c="place" role="radio" aria-checked="false" data-i18n="color.place"></button>
+            <button data-c="surah" role="radio" aria-checked="false" data-i18n="color.surah"></button>
+          </div>
+          <div id="colorKey" class="color-key"></div>
+        </div>
+        <div class="lg-sec">
+          <div class="lg-title"><span data-i18n="lg.themes"></span> <small data-i18n-html="lg.themesHelp"></small></div>
+          <div id="communities" class="communities"></div>
+        </div>
+      </div>
+    </aside>
+
+    <div class="toolbar" id="toolbar" hidden>
+      <div class="find">
+        <input id="find" dir="auto" data-i18n-placeholder="find.ph" data-i18n-aria="find.aria">
+        <span id="findCount" aria-live="polite"></span>
+      </div>
+      <button id="btnFit" data-i18n-title="tb.fit" data-i18n-aria="tb.fitA">⤢</button>
+      <button id="btnZoomOut" data-i18n-title="tb.zoomOut" data-i18n-aria="tb.zoomOutA">−</button>
+      <button id="btnZoomIn" data-i18n-title="tb.zoomIn" data-i18n-aria="tb.zoomInA">+</button>
+      <button id="btnLabels" data-i18n-title="tb.labelsT" data-i18n-aria="tb.labelsA" aria-pressed="true" data-i18n="tb.labels"></button>
+      <button id="btnUnpin" data-i18n-title="tb.unpinT" data-i18n-aria="tb.unpinA">📌✕</button>
+      <button id="btnPng" data-i18n-title="tb.pngT" data-i18n-aria="tb.pngA">PNG</button>
+      <button id="btnSvg" data-i18n-title="tb.svgT" data-i18n-aria="tb.svgA">SVG</button>
+      <button id="btnHelp" data-i18n-title="tb.helpT" data-i18n-aria="tb.helpA">?</button>
+    </div>
+    <div class="hint" id="hint" hidden data-i18n="hint"></div>
+    <!-- narrow screens: what was picked in the graph, and a way down to its list (updateRootPill) -->
+    <button class="root-pill" id="rootPill" type="button" hidden></button>
+    <div class="tooltip" id="tooltip" hidden></div>
+    <div class="busy" id="busy" hidden aria-live="polite"><div class="spinner"></div><span data-i18n="busy"></span></div>
+    <div class="toasts" id="toasts" aria-live="assertive"></div>
+    <!-- browser build only: what the in-page engine is loading (WEB in app.js) -->
+    <div class="webload" id="webLoad" hidden aria-live="polite"></div>
+
+    <div class="help" id="help" hidden role="dialog" data-i18n-aria="help.aria">
+      <button class="close" id="helpClose" data-i18n-aria="help.close">✕</button>
+      <h3 data-i18n="help.title"></h3>
+      <div class="help-grid">
+        <div><b data-i18n="help.mouse"></b><ul data-i18n-html="help.mouseList"></ul></div>
+        <div><b data-i18n="help.keys"></b><ul data-i18n-html="help.keyList"></ul></div>
+      </div>
+      <p class="help-src" data-i18n-html="help.sources"></p>
+    </div>
+
+    <!-- how to install where the browser has no install prompt (Safari, iPhone/iPad) -->
+    <div class="help install-help" id="installHelp" hidden role="dialog" data-i18n-aria="install.title">
+      <button class="close" id="installClose" data-i18n-aria="help.close">✕</button>
+      <h3 data-i18n="install.title"></h3>
+      <ol id="installIos" data-i18n-html="install.ios"></ol>
+      <ol id="installMac" data-i18n-html="install.mac"></ol>
+      <p class="help-src" data-i18n="install.note"></p>
+    </div>
+  </section>
+
+  <aside class="side" id="side">
+    <!-- phone layout: the panel is a bottom sheet; drag or tap this to resize it -->
+    <div class="sheet-handle" id="sheetHandle" role="button" tabindex="0" data-i18n-aria="sheet.aria"><i></i></div>
+    <!-- the active network (what the tabs below show), with the list of every network on the canvas (app.js: updateSwitcher) -->
+    <div id="switcher" class="switcher" hidden></div>
+    <div class="side-tabs" role="tablist" data-i18n-aria="side.aria">
+      <button role="tab" data-tab="results" class="on" aria-selected="true" id="tabbtn-results" aria-controls="tab-results" data-i18n="tab.results"></button>
+      <button role="tab" data-tab="node" aria-selected="false" id="tabbtn-node" aria-controls="tab-node" data-i18n="tab.node" tabindex="-1" hidden></button>
+      <button role="tab" data-tab="detail" aria-selected="false" id="tabbtn-detail" aria-controls="tab-detail" data-i18n="tab.detail"></button>
+      <!-- notes of the project (static/projects.js renders the panel; the badge is the note count) -->
+      <button role="tab" data-tab="notes" aria-selected="false" id="tabbtn-notes" aria-controls="tab-notes" tabindex="-1"><span data-i18n="nt.tab"></span><span class="nt-badge" hidden></span></button>
+    </div>
+    <div class="side-body">
+      <div id="tab-results" class="tab on" role="tabpanel" aria-labelledby="tabbtn-results" tabindex="0"><div class="empty" data-i18n="empty.start"></div></div>
+      <div id="tab-node" class="tab" role="tabpanel" aria-labelledby="tabbtn-node" tabindex="0"></div>
+      <div id="tab-detail" class="tab" role="tabpanel" aria-labelledby="tabbtn-detail" tabindex="0"><div class="empty" data-i18n="empty.pickNode"></div></div>
+      <div id="tab-notes" class="tab" role="tabpanel" aria-labelledby="tabbtn-notes" tabindex="0"></div>
+    </div>
+  </aside>
+</main>
+<!-- fill in the interface text now, before the (large) graph scripts load, so it never flashes empty -->
+<script>I18N.applyStatic();</script>
+
+<script src="static/vendor/cytoscape.min.js"></script>
+<script src="static/vendor/layout-base.js"></script>
+<script src="static/vendor/cose-base.js"></script>
+<script src="static/vendor/cytoscape-fcose.js"></script>
+<script src="static/vendor/cytoscape-layers.js"></script>
+<script src="static/vendor/cytoscape-svg.js"></script>
+<script src="static/app.js"></script>
+<script src="static/projects.js"></script>
+</body>
+</html>

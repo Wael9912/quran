@@ -1,0 +1,96 @@
+/* Projects and notes (static/projects.js). Colours are the tokens of style.css only, so light / dark and
+   RTL / LTR follow the rest of the interface. */
+
+/* ---------- header chip: project name · menu · save status ---------- */
+.proj-chip { position: relative; display: flex; align-items: center; gap: 4px; min-width: 0; max-width: 320px; flex: none; }
+.pj-name { display: inline-flex; align-items: center; gap: 6px; height: 38px; max-width: 230px; min-width: 0; padding: 0 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); color: var(--text); cursor: text; font-family: var(--chrome); font-size: 14px; }
+.pj-name:hover { border-color: var(--gold-dim); }
+.pj-icon { color: var(--gold); font-size: 15px; flex: none; }
+.pj-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; font-family: var(--mixed); }
+.pj-title.untitled { color: var(--muted); }
+.pj-hint { color: var(--gold); font-size: 11px; flex: none; font-family: var(--chrome); }
+.pj-name input, .pj-row input.pj-rn { width: 180px; max-width: 100%; height: 26px; padding: 0 6px; border-radius: 6px; border: 1px solid var(--gold-dim); background: var(--panel2); color: var(--text); font: 14px var(--mixed); outline: none; }
+.pj-menu-btn { width: 30px; height: 38px; flex: none; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); color: var(--muted); cursor: pointer; font-size: 13px; }
+.pj-menu-btn:hover, .pj-menu-btn[aria-expanded="true"] { color: var(--text); border-color: var(--gold-dim); }
+.pj-status { font-size: 11px; color: var(--muted); white-space: nowrap; font-family: var(--chrome); transition: opacity .7s; }
+.pj-status.saving { color: var(--gold); }
+.pj-status.error { color: var(--err-line); }
+.pj-status.other { color: var(--warn-text); }
+.pj-status.fade { opacity: 0; }
+
+/* ---------- popover: new / import, then the saved projects ---------- */
+.pj-pop { position: absolute; top: 44px; inset-inline-start: 0; width: min(440px, calc(100vw - 24px)); max-height: min(72vh, 600px); overflow-y: auto; background: var(--float-strong); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 14px 40px var(--shadow); z-index: 60; padding: 6px; }
+.pj-item { display: flex; gap: 8px; align-items: center; width: 100%; padding: 8px 10px; border: 0; background: none; color: var(--text); cursor: pointer; border-radius: 8px; font-family: var(--chrome); font-size: 13.5px; text-align: start; }
+.pj-item:hover, .pj-item:focus-visible { background: var(--hover); }
+.pj-item .pj-ic { color: var(--gold); width: 18px; text-align: center; flex: none; }
+.pj-sep { border-top: 1px solid var(--line); margin: 6px 4px; }
+.pj-head { font-size: 11px; color: var(--muted); padding: 4px 10px 2px; font-family: var(--chrome); }
+.pj-none { color: var(--muted); font-size: 12.5px; padding: 8px 10px 10px; font-family: var(--chrome); }
+.pj-row { display: grid; grid-template-columns: 64px 1fr; gap: 6px 10px; padding: 8px 10px; border-radius: 9px; cursor: pointer; align-items: center; border: 1px solid transparent; }
+.pj-row:hover, .pj-row:focus-within { background: var(--hover); }
+.pj-row.cur { border-color: var(--gold-dim); background: var(--gold-bg); }
+.pj-thumb { width: 64px; height: 42px; border-radius: 6px; object-fit: cover; background: var(--panel2); border: 1px solid var(--line); display: block; }
+.pj-thumb.none { display: grid; place-items: center; color: var(--muted); font-size: 18px; }
+.pj-info { min-width: 0; }
+.pj-rname { font-family: var(--mixed); font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pj-rname.untitled { color: var(--muted); }
+.pj-meta { color: var(--muted); font-size: 11px; font-family: var(--chrome); }
+.pj-meta b { color: var(--gold); font-weight: 600; }
+.pj-acts { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px; opacity: 0; transition: opacity .12s; }
+.pj-row:hover .pj-acts, .pj-row:focus-within .pj-acts, .pj-row.cur .pj-acts { opacity: 1; }
+.pj-acts button { padding: 2px 9px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--muted); cursor: pointer; font-size: 11.5px; font-family: var(--chrome); }
+.pj-acts button:hover, .pj-acts button:focus-visible { color: var(--text); border-color: var(--gold-dim); }
+.pj-acts button.danger:hover { border-color: var(--err-line); color: var(--err-line); }
+.pj-confirm { grid-column: 1 / -1; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 12px; color: var(--warn-text); font-family: var(--chrome); }
+.pj-confirm button { padding: 2px 10px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--text); cursor: pointer; font-size: 11.5px; }
+.pj-confirm button.danger { border-color: var(--err-line); color: var(--err-line); }
+
+/* ---------- notes: the editor (in Details and the Notes tab) ---------- */
+.note-ed { margin: 10px 0; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; background: var(--panel2); }
+.note-head { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--gold); font-family: var(--chrome); }
+.note-head .note-label { font-weight: 600; }
+.note-status { color: var(--muted); font-size: 11px; transition: opacity .6s; }
+.note-status.fade { opacity: 0; }
+.note-del { margin-inline-start: auto; border: 0; background: none; color: var(--muted); cursor: pointer; font-size: 11px; font-family: var(--chrome); padding: 0; }
+.note-del:hover { color: var(--err-line); }
+.note-ta { display: block; width: 100%; min-height: 46px; max-height: 320px; resize: vertical; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--text); padding: 6px 8px; margin-top: 6px; font: 13.5px/1.6 var(--mixed); }
+.note-ta:focus { border-color: var(--gold-dim); outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold) 18%, transparent); }
+.note-refs { margin-top: 5px; font-size: 11.5px; color: var(--muted); display: flex; gap: 4px; flex-wrap: wrap; align-items: center; font-family: var(--chrome); }
+.note-refs button { padding: 0 7px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--gold); cursor: pointer; font-size: 11.5px; }
+.note-refs button:hover { border-color: var(--gold-dim); }
+.note-esc { margin-inline-start: auto; opacity: .7; }
+/* a note opened with N / «ملاحظة» on an item Details is not showing: a card at the top of Details */
+.nt-quick { margin: 0 0 12px; }
+.nt-quick-head { font-family: var(--chrome); font-size: 13px; color: var(--text2); }
+/* «＋ ملاحظة» button that Details shows before a note exists (app.js may render it; styled here) */
+.note-add { padding: 3px 10px; border-radius: 8px; border: 1px dashed var(--line); background: none; color: var(--muted); cursor: pointer; font-size: 12px; font-family: var(--chrome); }
+.note-add:hover { color: var(--gold); border-color: var(--gold-dim); }
+
+/* ---------- notes tab ---------- */
+.nt-badge { display: inline-block; min-width: 18px; padding: 0 5px; margin-inline-start: 5px; border-radius: 999px; background: var(--gold-bg); color: var(--gold); border: 1px solid var(--gold-dim); font-size: 10.5px; line-height: 16px; font-family: var(--ui); vertical-align: 1px; }
+.nt-wrap { display: flex; flex-direction: column; gap: 4px; }
+.nt-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin: 12px 0 4px; }
+.nt-top .seg { flex: 1; max-width: 260px; }
+.nt-sec h4 { margin-top: 14px; }
+.nt-sec h4 small { font-family: var(--ui); }
+.nt-item { border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; background: var(--card); cursor: pointer; margin-bottom: 6px; display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; align-items: start; }
+.nt-item:hover, .nt-item:focus-visible { border-color: var(--gold-dim); background: var(--panel2); }
+.nt-item .nt-ref { color: var(--gold); font-size: 12.5px; font-weight: 600; }
+.nt-item .nt-ref .sname { font-family: var(--ar); font-weight: 400; color: var(--muted); font-size: 12px; }
+.nt-item .nt-edit { grid-row: 1 / span 3; border: 0; background: none; color: var(--muted); cursor: pointer; font-size: 14px; padding: 0 2px; }
+.nt-item .nt-edit:hover { color: var(--gold); }
+.nt-item .nt-ar { grid-column: 1; font-family: var(--quran); font-size: 17px; line-height: 1.9; direction: rtl; text-align: right; color: var(--ayah-text); }
+.nt-item .nt-word { grid-column: 1; font-family: var(--quran); font-size: 18px; color: var(--root); direction: rtl; }
+.nt-item .nt-net { grid-column: 1; font-family: var(--mixed); font-size: 14px; color: var(--query); }
+.nt-item .nt-text { grid-column: 1; white-space: pre-wrap; font-size: 13px; color: var(--text2); margin-top: 2px; font-family: var(--mixed); }
+.nt-empty { color: var(--muted); text-align: center; padding: 24px 10px; font-family: var(--chrome); font-size: 13px; }
+
+/* a results card whose ayah carries a note (projects.js adds .noted to .res) */
+.res.noted .res-head > span:last-child::after { content: ' ✎'; color: var(--gold); }
+
+@media (max-width: 1100px) {
+  .proj-chip { max-width: 55%; }
+  .pj-name { max-width: 170px; height: 34px; font-size: 13px; }
+  .pj-menu-btn { height: 34px; }
+  .pj-pop { inset-inline-start: auto; inset-inline-end: 0; }
+}

@@ -1,0 +1,67 @@
+/* Phone layout: html.phone, set before first paint by QR_LAYOUT in index.html (small touch screens,
+   narrow windows, or the header's layout button). The canvas fills the screen under a compact header
+   and the side panel becomes a bottom sheet (app.js: setSheet). These rules beat the ≤1100px ones of
+   style.css, which also apply when Chrome's "Desktop site" lays the page out 980px wide. */
+.layout-btn, .opts-btn, .sheet-handle { display: none; }
+.phone-able .layout-btn { display: grid; }
+.layout-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; }
+
+html.phone, html.phone body { height: var(--app-h, 100%); }
+html.phone body { overflow: hidden; }
+
+/* header: mark · project · buttons / views / search ⚙ go (the three choices fold behind ⚙) */
+.phone .top { padding: 8px 10px 8px; gap: 7px 8px; }
+.phone .brand > div:last-child { display: none; }
+.phone .mark { width: 36px; height: 36px; }
+.phone .proj-chip { order: 1; flex: 1 1 0; max-width: none; min-width: 0; }
+.phone .pj-name { max-width: none; flex: 1; min-width: 0; }
+.phone .top-btns { order: 2; gap: 5px; }
+.phone .theme-btn { width: 36px; height: 36px; }
+.phone .views { order: 3; flex: 1 1 100%; min-width: 0; overflow: visible; }
+.phone .views button { flex: 1; padding: 5px 4px; font-size: 13.5px; }
+.phone .searchbar { order: 4; flex: 1 1 100%; flex-wrap: wrap; gap: 6px; }
+.phone .qwrap { order: 0; flex: 1 1 calc(100% - 150px); min-width: 0; }   /* fills its line: the choices wrap below */
+.phone .opts-btn { display: grid; place-items: center; order: 1; flex: none; width: 42px; height: 42px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); color: var(--muted); font-size: 18px; cursor: pointer; }
+.phone .opts-btn[aria-expanded="true"] { color: var(--gold); border-color: var(--gold-dim); }
+.phone .go { order: 2; height: 42px; padding: 0 16px; }
+.phone #q { height: 42px; }
+.phone .searchbar select { order: 3; display: none; flex: 1 1 0; min-width: 28%; height: 38px; padding: 0 6px; }   /* one row of their own: 28% never fits beside the search */
+.phone .searchbar select#n { flex-grow: 1.45; }   /* «الشبكة: تلقائي» is the longest label */
+.phone .searchbar.opts-open select { display: block; }
+
+/* the canvas under the sheet's tabs; the sheet slides over it */
+.phone main { position: relative; display: block; flex: 1; min-height: 0; }
+.phone .stage { position: absolute; inset: 0 0 var(--peek, 64px) 0; height: auto; min-height: 0; }
+.phone .side { position: absolute; inset: auto 0 0 0; z-index: 30; width: auto; height: var(--peek, 64px); min-height: 0;
+  border: 1px solid var(--line); border-bottom: 0; border-radius: 16px 16px 0 0; box-shadow: 0 -8px 28px var(--shadow);
+  transition: height .22s ease; overflow: hidden; }
+.phone .side.dragging { transition: none; }
+.phone .side-body { overflow-y: auto; overscroll-behavior: contain; }
+.phone .sheet-handle { display: flex; align-items: center; justify-content: center; height: 20px; flex: none; cursor: grab; touch-action: none; }
+.phone .sheet-handle i { width: 42px; height: 5px; border-radius: 3px; background: var(--muted); opacity: .55; }
+.phone .side-tabs button { padding: 8px 4px 10px; }
+.phone .tab { padding: 12px; }
+
+/* on the canvas: one scrolling row of tools (pinch zooms, so no ± buttons), dialogs that fit */
+.phone .toolbar { left: 8px; right: 8px; bottom: 8px; max-width: none; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+.phone .toolbar::-webkit-scrollbar { display: none; }
+.phone .toolbar button { flex: none; height: 36px; min-width: 36px; }
+.phone #btnZoomIn, .phone #btnZoomOut { display: none; }
+.phone #find { width: 130px; }
+.phone .legend { top: 8px; max-height: calc(100% - 64px); }
+.phone .help { max-height: calc(100% - 24px); overflow-y: auto; }
+.phone .welcome { justify-content: flex-start; overflow-y: auto; padding: 18px 14px 70px; pointer-events: auto; }
+.phone .welcome .w-ar { font-size: 21px; }
+.phone .ctx { max-width: calc(100vw - 24px); }
+.phone .phrase-view { padding: 12px; }
+
+/* the project chip: its menu is a full-width panel under the first header row (the chip is too narrow to
+   hang it from), every row's actions show (no hover on touch), rename fills the chip; the autosave
+   status only shows when it matters */
+.phone .pj-pop { position: fixed; top: 52px; inset-inline: 8px; width: auto; max-height: calc(var(--app-h, 100dvh) - 64px); padding: 8px; }
+.phone .pj-item { padding: 11px 10px; font-size: 14.5px; }
+.phone .pj-acts { opacity: 1; gap: 6px; }
+.phone .pj-acts button, .phone .pj-confirm button { padding: 6px 12px; font-size: 13px; }
+.phone .pj-row { padding: 10px; }
+.phone .pj-name input { flex: 1; width: auto; min-width: 0; height: 28px; font-size: 16px; }
+.phone .pj-status:not(.error):not(.other) { display: none; }
